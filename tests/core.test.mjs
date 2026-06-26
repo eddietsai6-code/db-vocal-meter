@@ -7,7 +7,9 @@ import {
   decibelsFromRms,
   displayDbFromRms,
   getRms,
+  median,
   shouldTrackDb,
+  smoothDisplayDb,
   smoothValue,
   updateSessionStats,
 } from "../assets/meter-core.js";
@@ -37,9 +39,31 @@ test("displayDbFromRms maps dBFS-style input into a practical display range", ()
   assert.equal(displayDbFromRms(10, { offset: 85 }), 100);
 });
 
+test("displayDbFromRms defaults closer to a normal vocal practice range", () => {
+  assert.equal(displayDbFromRms(0.03162277660168379), 60);
+});
+
 test("smoothValue blends previous and next readings", () => {
   assert.equal(smoothValue(null, 60, 0.4), 60);
   assert.equal(smoothValue(50, 60, 0.4), 54);
+});
+
+test("smoothDisplayDb holds small changes inside the display deadband", () => {
+  assert.equal(smoothDisplayDb(60, 61), 60);
+  assert.equal(smoothDisplayDb(60, 58), 60);
+});
+
+test("smoothDisplayDb follows larger changes slowly enough for singing practice", () => {
+  assert.equal(smoothDisplayDb(60, 75, { response: 0.12, deadband: 2 }), 62);
+  assert.equal(smoothDisplayDb(75, 60, { response: 0.12, deadband: 2 }), 73);
+});
+
+test("median resists single-frame input spikes", () => {
+  assert.equal(median([0.01, 0.011, 0.8, 0.012, 0.013]), 0.012);
+});
+
+test("median averages the middle pair for even sample windows", () => {
+  assert.equal(median([4, 1, 2, 100]), 3);
 });
 
 test("shouldTrackDb ignores readings below the quiet threshold", () => {

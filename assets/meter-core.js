@@ -1,8 +1,10 @@
 export const DEFAULT_DB_FLOOR = -100;
-export const DEFAULT_DISPLAY_OFFSET = 85;
+export const DEFAULT_DISPLAY_OFFSET = 90;
 export const DEFAULT_DISPLAY_MIN = 0;
 export const DEFAULT_DISPLAY_MAX = 100;
 export const DEFAULT_QUIET_THRESHOLD = 40;
+export const DEFAULT_DISPLAY_RESPONSE = 0.12;
+export const DEFAULT_DISPLAY_DEADBAND = 2;
 
 export function clamp(value, min, max) {
   if (!Number.isFinite(value)) {
@@ -49,6 +51,45 @@ export function smoothValue(previous, next, amount = 0.35) {
 
   const smoothing = clamp(amount, 0, 0.95);
   return Math.round(previous + (next - previous) * smoothing);
+}
+
+export function smoothDisplayDb(
+  previous,
+  next,
+  {
+    response = DEFAULT_DISPLAY_RESPONSE,
+    deadband = DEFAULT_DISPLAY_DEADBAND,
+  } = {}
+) {
+  if (!Number.isFinite(previous)) {
+    return Math.round(next);
+  }
+
+  const roundedPrevious = Math.round(previous);
+  const roundedNext = Math.round(next);
+  if (Math.abs(roundedNext - roundedPrevious) <= deadband) {
+    return roundedPrevious;
+  }
+
+  const amount = clamp(response, 0.04, 0.5);
+  return Math.round(previous + (next - previous) * amount);
+}
+
+export function median(values) {
+  const finiteValues = values
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => left - right);
+
+  if (!finiteValues.length) {
+    return 0;
+  }
+
+  const middle = Math.floor(finiteValues.length / 2);
+  if (finiteValues.length % 2) {
+    return finiteValues[middle];
+  }
+
+  return (finiteValues[middle - 1] + finiteValues[middle]) / 2;
 }
 
 export function shouldTrackDb(value, threshold = DEFAULT_QUIET_THRESHOLD) {

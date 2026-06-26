@@ -1,19 +1,22 @@
 import {
   DEFAULT_DISPLAY_OFFSET,
+  DEFAULT_DISPLAY_RESPONSE,
   DEFAULT_QUIET_THRESHOLD,
   clamp,
   createSessionStats,
   displayDbFromRms,
   getRms,
+  median,
   shouldTrackDb,
-  smoothValue,
+  smoothDisplayDb,
   updateSessionStats,
 } from "./meter-core.js";
 
-const STORAGE_KEY = "db-vocal-meter-settings";
+const STORAGE_KEY = "db-vocal-meter-settings-v2";
+const DISPLAY_INTERVAL_MS = 250;
 const DEFAULT_SETTINGS = {
   offset: DEFAULT_DISPLAY_OFFSET,
-  smoothing: 0.35,
+  smoothing: DEFAULT_DISPLAY_RESPONSE,
 };
 
 const currentValue = document.querySelector("#currentValue");
@@ -35,6 +38,8 @@ let stream = null;
 let animationFrame = null;
 let timeBuffer = null;
 let smoothedDb = null;
+let rmsWindow = [];
+let lastDisplayAt = 0;
 let stats = createSessionStats();
 let settings = loadSettings();
 
@@ -47,7 +52,7 @@ function loadSettings() {
 
     return {
       offset: clamp(Number(parsed.offset), 40, 110),
-      smoothing: clamp(Number(parsed.smoothing), 0.05, 0.85),
+      smoothing: clamp(Number(parsed.smoothing), 0.06, 0.3),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -102,9 +107,21 @@ function tick() {
   }
 
   analyser.getFloatTimeDomainData(timeBuffer);
-  const rms = getRms(timeBuffer);
+  rmsWindow.push(getRms(timeBuffer));
+  const now = performance.now();
+
+  if (now - lastDisplayAt < DISPLAY_INTERVAL_MS) {
+    animationFrame = window.requestAnimationFrame(tick);
+    return;
+  }
+
+  const rms = median(rmsWindow);
+  rmsWindow = [];
+  lastDisplayAt = now;
   const nextDb = displayDbFromRms(rms, { offset: settings.offset });
-  smoothedDb = smoothValue(smoothedDb, nextDb, settings.smoothing);
+  smoothedDb = smoothDisplayDb(smoothedDb, nextDb, {
+    response: settings.smoothing,
+  });
   updateCurrent(smoothedDb);
 
   if (shouldTrackDb(smoothedDb, DEFAULT_QUIET_THRESHOLD)) {
@@ -143,6 +160,8 @@ async function startListening() {
     const source = audioContext.createMediaStreamSource(stream);
     source.connect(analyser);
     micButton.disabled = false;
+    rmsWindow = [];
+    lastDisplayAt = 0;
     updateMicButton(true);
     setStatus("LISTENING");
     animationFrame = window.requestAnimationFrame(tick);
@@ -172,6 +191,8 @@ function stopListening() {
   analyser = null;
   timeBuffer = null;
   smoothedDb = null;
+  rmsWindow = [];
+  lastDisplayAt = 0;
   micButton.disabled = false;
   updateMicButton(false);
   setStatus("READY");
@@ -215,7 +236,7 @@ offsetInput.addEventListener("change", () => {
 smoothingInput.addEventListener("input", () => {
   settings = {
     ...settings,
-    smoothing: clamp(Number(smoothingInput.value), 0.05, 0.85),
+    smoothing: clamp(Number(smoothingInput.value), 0.06, 0.3),
   };
   saveSettings();
 });
