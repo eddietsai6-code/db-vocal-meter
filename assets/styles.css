@@ -301,7 +301,9 @@ button {
   }
 
   .meter-app {
-    grid-template-rows: minmax(360px, 1fr) auto auto;
+    grid-template-rows: minmax(300px, 1fr) auto auto;
+    padding-top: 20px;
+    padding-bottom: 20px;
   }
 
   .current-value {
@@ -310,5 +312,9 @@ button {
 
   .unit {
     font-size: 6.4rem;
+  }
+
+  .stats {
+    margin-bottom: 9svh;
   }
 }
