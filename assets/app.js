@@ -1,0 +1,226 @@
+import {
+  DEFAULT_DISPLAY_OFFSET,
+  DEFAULT_QUIET_THRESHOLD,
+  clamp,
+  createSessionStats,
+  displayDbFromRms,
+  getRms,
+  shouldTrackDb,
+  smoothValue,
+  updateSessionStats,
+} from "./meter-core.js";
+
+const STORAGE_KEY = "db-vocal-meter-settings";
+const DEFAULT_SETTINGS = {
+  offset: DEFAULT_DISPLAY_OFFSET,
+  smoothing: 0.35,
+};
+
+const currentValue = document.querySelector("#currentValue");
+const minValue = document.querySelector("#minValue");
+const meanValue = document.querySelector("#meanValue");
+const maxValue = document.querySelector("#maxValue");
+const resetButton = document.querySelector("#resetButton");
+const micButton = document.querySelector("#micButton");
+const settingsButton = document.querySelector("#settingsButton");
+const settingsDialog = document.querySelector("#settingsDialog");
+const closeSettingsButton = document.querySelector("#closeSettingsButton");
+const offsetInput = document.querySelector("#offsetInput");
+const smoothingInput = document.querySelector("#smoothingInput");
+const statusText = document.querySelector("#statusText");
+
+let audioContext = null;
+let analyser = null;
+let stream = null;
+let animationFrame = null;
+let timeBuffer = null;
+let smoothedDb = null;
+let stats = createSessionStats();
+let settings = loadSettings();
+
+function loadSettings() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+    if (!parsed || typeof parsed !== "object") {
+      return { ...DEFAULT_SETTINGS };
+    }
+
+    return {
+      offset: clamp(Number(parsed.offset), 40, 110),
+      smoothing: clamp(Number(parsed.smoothing), 0.05, 0.85),
+    };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function saveSettings() {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+}
+
+function syncSettingsInputs() {
+  offsetInput.value = String(settings.offset);
+  smoothingInput.value = String(settings.smoothing);
+}
+
+function formatDb(value) {
+  return Number.isFinite(value) ? String(Math.round(value)) : "--";
+}
+
+function setStatus(text, isError = false) {
+  statusText.textContent = text;
+  statusText.classList.toggle("error", isError);
+}
+
+function renderStats() {
+  minValue.textContent = formatDb(stats.min);
+  meanValue.textContent = formatDb(stats.mean);
+  maxValue.textContent = formatDb(stats.max);
+}
+
+function resetSession() {
+  stats = createSessionStats();
+  renderStats();
+  setStatus(audioContext ? "LISTENING" : "READY");
+}
+
+function updateCurrent(value) {
+  currentValue.textContent = formatDb(value);
+}
+
+function updateMicButton(active) {
+  micButton.setAttribute("aria-pressed", active ? "true" : "false");
+  micButton.setAttribute(
+    "aria-label",
+    active ? "Stop microphone" : "Start microphone"
+  );
+}
+
+function tick() {
+  if (!analyser || !timeBuffer) {
+    return;
+  }
+
+  analyser.getFloatTimeDomainData(timeBuffer);
+  const rms = getRms(timeBuffer);
+  const nextDb = displayDbFromRms(rms, { offset: settings.offset });
+  smoothedDb = smoothValue(smoothedDb, nextDb, settings.smoothing);
+  updateCurrent(smoothedDb);
+
+  if (shouldTrackDb(smoothedDb, DEFAULT_QUIET_THRESHOLD)) {
+    stats = updateSessionStats(stats, smoothedDb);
+    renderStats();
+  }
+
+  animationFrame = window.requestAnimationFrame(tick);
+}
+
+async function startListening() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setStatus("MIC API UNAVAILABLE", true);
+    return;
+  }
+
+  micButton.disabled = true;
+  setStatus("STARTING");
+
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    audioContext = new AudioContextClass();
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.04;
+    timeBuffer = new Float32Array(analyser.fftSize);
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+      },
+    });
+
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+    micButton.disabled = false;
+    updateMicButton(true);
+    setStatus("LISTENING");
+    animationFrame = window.requestAnimationFrame(tick);
+  } catch (error) {
+    stopListening();
+    micButton.disabled = false;
+    setStatus(error?.name === "NotAllowedError" ? "MIC DENIED" : "MIC ERROR", true);
+  }
+}
+
+function stopListening() {
+  if (animationFrame) {
+    window.cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
+
+  if (stream) {
+    stream.getTracks().forEach((track) => track.stop());
+    stream = null;
+  }
+
+  if (audioContext) {
+    audioContext.close();
+    audioContext = null;
+  }
+
+  analyser = null;
+  timeBuffer = null;
+  smoothedDb = null;
+  micButton.disabled = false;
+  updateMicButton(false);
+  setStatus("READY");
+}
+
+function openSettings() {
+  syncSettingsInputs();
+  if (typeof settingsDialog.showModal === "function") {
+    settingsDialog.showModal();
+    return;
+  }
+  settingsDialog.setAttribute("open", "");
+}
+
+function closeSettings() {
+  settingsDialog.close();
+}
+
+resetButton.addEventListener("click", resetSession);
+
+micButton.addEventListener("click", () => {
+  if (audioContext) {
+    stopListening();
+    return;
+  }
+  startListening();
+});
+
+settingsButton.addEventListener("click", openSettings);
+closeSettingsButton.addEventListener("click", closeSettings);
+
+offsetInput.addEventListener("change", () => {
+  settings = {
+    ...settings,
+    offset: clamp(Number(offsetInput.value), 40, 110),
+  };
+  syncSettingsInputs();
+  saveSettings();
+});
+
+smoothingInput.addEventListener("input", () => {
+  settings = {
+    ...settings,
+    smoothing: clamp(Number(smoothingInput.value), 0.05, 0.85),
+  };
+  saveSettings();
+});
+
+syncSettingsInputs();
+renderStats();
+updateCurrent(null);
+updateMicButton(false);

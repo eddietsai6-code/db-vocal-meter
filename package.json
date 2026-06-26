@@ -1,0 +1,19 @@
+{
+  "name": "db-vocal-meter",
+  "version": "0.1.0",
+  "description": "A minimal browser dB meter for checking a cappella vocal volume.",
+  "type": "module",
+  "license": "MIT",
+  "author": "eddietsai6-code",
+  "keywords": [
+    "db-meter",
+    "vocal-practice",
+    "web-audio",
+    "a-cappella",
+    "sound-level"
+  ],
+  "scripts": {
+    "serve": "python -m http.server 4190 --bind 127.0.0.1",
+    "test": "node --test tests/core.test.mjs"
+  }
+}
