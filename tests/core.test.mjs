@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   clamp,
   createSessionStats,
+  calibrationOffsetFromReference,
   decibelsFromRms,
   displayDbFromRms,
   getRms,
@@ -36,11 +37,25 @@ test("decibelsFromRms clamps silence to the configured floor", () => {
 
 test("displayDbFromRms maps dBFS-style input into a practical display range", () => {
   assert.equal(displayDbFromRms(0.1, { offset: 85 }), 65);
-  assert.equal(displayDbFromRms(10, { offset: 85 }), 100);
+  assert.equal(displayDbFromRms(10, { offset: 85 }), 105);
 });
 
 test("displayDbFromRms defaults closer to a normal vocal practice range", () => {
   assert.equal(displayDbFromRms(0.03162277660168379), 60);
+});
+
+test("calibrationOffsetFromReference matches an external meter reading", () => {
+  const rms = 0.03162277660168379;
+  const offset = calibrationOffsetFromReference(rms, 72);
+
+  assert.equal(offset, 102);
+  assert.equal(displayDbFromRms(rms, { offset }), 72);
+});
+
+test("calibrationOffsetFromReference clamps unsafe calibration results", () => {
+  assert.equal(calibrationOffsetFromReference(0, 72), 90);
+  assert.equal(calibrationOffsetFromReference(1, 190), 140);
+  assert.equal(calibrationOffsetFromReference(1, -20), 20);
 });
 
 test("smoothValue blends previous and next readings", () => {

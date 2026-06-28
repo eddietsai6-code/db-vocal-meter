@@ -5,7 +5,7 @@
   --muted: rgba(255, 255, 255, 0.62);
   --panel: #090909;
   --panel-line: rgba(255, 255, 255, 0.22);
-  --button-size: 84px;
+  --button-size: clamp(64px, 10svh, 92px);
 }
 
 * {
@@ -15,6 +15,7 @@
 html,
 body {
   min-height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -44,19 +45,21 @@ button {
 }
 
 .meter-app {
-  width: min(100%, 560px);
+  width: min(100%, 820px);
+  height: 100svh;
   min-height: 100svh;
   display: grid;
-  grid-template-rows: minmax(250px, 0.85fr) auto auto;
+  grid-template-rows: 39svh 32svh 1fr;
   margin: 0 auto;
-  padding: max(16px, env(safe-area-inset-top)) 20px max(22px, env(safe-area-inset-bottom));
+  padding: max(12px, env(safe-area-inset-top)) clamp(14px, 4.8vw, 36px) max(14px, env(safe-area-inset-bottom));
 }
 
 .readout {
   display: grid;
-  align-content: center;
+  align-content: end;
   justify-items: end;
-  gap: 18px;
+  gap: clamp(10px, 2.2svh, 24px);
+  padding-bottom: clamp(18px, 5svh, 56px);
 }
 
 .current-line {
@@ -64,18 +67,18 @@ button {
   display: flex;
   align-items: baseline;
   justify-content: flex-end;
-  gap: 18px;
+  gap: clamp(10px, 2.8vw, 24px);
 }
 
 .current-value {
-  font-size: clamp(7.4rem, 30vw, 11rem);
+  font-size: clamp(6.8rem, min(35vw, 25svh), 15rem);
   font-weight: 520;
   line-height: 0.86;
   letter-spacing: 0;
 }
 
 .unit {
-  font-size: clamp(5.7rem, 23vw, 8rem);
+  font-size: clamp(5.2rem, min(26vw, 19svh), 10.8rem);
   font-weight: 520;
   line-height: 1;
   letter-spacing: 0;
@@ -100,21 +103,22 @@ button {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-  margin-bottom: 9svh;
+  grid-template-columns: 0.9fr 1.2fr 0.9fr;
+  align-content: center;
+  gap: clamp(4px, 2.4vw, 24px);
+  margin: 0;
 }
 
 .stat {
   min-width: 0;
   display: grid;
-  gap: 34px;
+  gap: clamp(18px, 5.4svh, 56px);
   justify-items: center;
 }
 
 .stat-label {
   color: var(--fg);
-  font-size: clamp(3rem, 13vw, 4.25rem);
+  font-size: clamp(2.7rem, 13.8vw, 6rem);
   font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
@@ -124,7 +128,7 @@ button {
 .stat-value {
   min-height: 1.2em;
   color: var(--fg);
-  font-size: clamp(2rem, 8vw, 3rem);
+  font-size: clamp(2rem, 8.8vw, 4.2rem);
   font-weight: 520;
   line-height: 1;
   letter-spacing: 0;
@@ -132,8 +136,9 @@ button {
 
 .controls {
   display: flex;
+  align-items: center;
   justify-content: center;
-  gap: 42px;
+  gap: clamp(24px, 8vw, 64px);
 }
 
 .icon-button {
@@ -245,7 +250,8 @@ button {
 
 .settings-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .text-button {
@@ -258,68 +264,21 @@ button {
   cursor: pointer;
 }
 
-@media (max-width: 430px) {
-  :root {
-    --button-size: 72px;
-  }
+.text-button.secondary {
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: #fff;
+  background: #000;
+}
 
+@media (max-width: 430px) {
   .meter-app {
-    grid-template-rows: auto auto auto;
-    align-content: space-between;
     padding-left: 16px;
     padding-right: 16px;
-  }
-
-  .readout {
-    padding-top: 10svh;
-  }
-
-  .current-value {
-    font-size: 7.65rem;
-  }
-
-  .unit {
-    font-size: 5.75rem;
-  }
-
-  .stats {
-    gap: 12px;
-    margin-bottom: 0;
-  }
-
-  .stat-label {
-    font-size: 3rem;
-  }
-
-  .stat-value {
-    font-size: 2rem;
-  }
-
-  .controls {
-    gap: 24px;
   }
 }
 
 @media (min-width: 720px) {
-  :root {
-    --button-size: 80px;
-  }
-
   .meter-app {
-    grid-template-rows: minmax(300px, 1fr) auto auto;
-    padding-top: 20px;
-    padding-bottom: 20px;
-  }
-
-  .current-value {
-    font-size: 8.8rem;
-  }
-
-  .unit {
-    font-size: 6.4rem;
-  }
-
-  .stats {
-    margin-bottom: 9svh;
+    width: min(100%, 900px);
   }
 }

@@ -81,15 +81,8 @@
           title="Settings"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h4" />
-            <path d="M12 7h8" />
-            <path d="M4 12h10" />
-            <path d="M18 12h2" />
-            <path d="M4 17h7" />
-            <path d="M15 17h5" />
-            <circle cx="10" cy="7" r="2" />
-            <circle cx="16" cy="12" r="2" />
-            <circle cx="13" cy="17" r="2" />
+            <path d="M9.67 4.14a2.34 2.34 0 0 1 4.66 0 2.34 2.34 0 0 0 3.32 1.91 2.34 2.34 0 0 1 2.33 4.03 2.34 2.34 0 0 0 0 3.84 2.34 2.34 0 0 1-2.33 4.03 2.34 2.34 0 0 0-3.32 1.91 2.34 2.34 0 0 1-4.66 0 2.34 2.34 0 0 0-3.32-1.91 2.34 2.34 0 0 1-2.33-4.03 2.34 2.34 0 0 0 0-3.84 2.34 2.34 0 0 1 2.33-4.03 2.34 2.34 0 0 0 3.32-1.91Z" />
+            <circle cx="12" cy="12" r="3" />
           </svg>
         </button>
       </nav>
@@ -104,8 +97,19 @@
             id="offsetInput"
             type="number"
             inputmode="decimal"
-            min="40"
-            max="110"
+            min="20"
+            max="140"
+            step="1"
+          />
+        </label>
+        <label>
+          Machine dB
+          <input
+            id="referenceInput"
+            type="number"
+            inputmode="decimal"
+            min="20"
+            max="120"
             step="1"
           />
         </label>
@@ -120,6 +124,9 @@
           />
         </label>
         <div class="settings-actions">
+          <button class="text-button secondary" id="calibrateButton" type="button">
+            Match
+          </button>
           <button class="text-button" id="closeSettingsButton" type="submit">
             Done
           </button>

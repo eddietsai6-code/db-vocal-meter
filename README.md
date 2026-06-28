@@ -9,7 +9,7 @@ A minimal browser dB meter for checking a cappella vocal volume while practicing
 - Current-session `min`, `mean`, and `max`
 - Start/stop microphone control
 - Reset button for a fresh practice pass
-- Compact settings for calibration offset and smoothing
+- Compact settings for matching an external meter, calibration offset, and smoothing
 - No runtime dependencies, backend, CDN, or account required
 
 ## Quick Start
@@ -40,7 +40,7 @@ The test suite covers RMS calculation, dB conversion, smoothing, quiet-input rej
 
 This app is for vocal-practice reference, not certified sound level measurement. Browser microphones and device audio pipelines vary widely, so readings are approximate unless you calibrate them against a known sound level meter.
 
-The default display maps browser input level into a practical singing-practice range. Use the settings panel's calibration offset if you want to align the displayed number with another meter.
+The default display maps browser input level into a practical singing-practice range. To align it with another meter, start the microphone, make a steady sound, enter the external meter's number in `Machine dB`, then press `Match`.
 
 ## Project Structure
 

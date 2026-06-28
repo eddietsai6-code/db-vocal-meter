@@ -1,7 +1,9 @@
 export const DEFAULT_DB_FLOOR = -100;
 export const DEFAULT_DISPLAY_OFFSET = 90;
 export const DEFAULT_DISPLAY_MIN = 0;
-export const DEFAULT_DISPLAY_MAX = 100;
+export const DEFAULT_DISPLAY_MAX = 120;
+export const DEFAULT_OFFSET_MIN = 20;
+export const DEFAULT_OFFSET_MAX = 140;
 export const DEFAULT_QUIET_THRESHOLD = 40;
 export const DEFAULT_DISPLAY_RESPONSE = 0.12;
 export const DEFAULT_DISPLAY_DEADBAND = 2;
@@ -42,6 +44,22 @@ export function displayDbFromRms(
   } = {}
 ) {
   return clamp(decibelsFromRms(rms) + offset, min, max);
+}
+
+export function calibrationOffsetFromReference(
+  rms,
+  referenceDb,
+  {
+    min = DEFAULT_OFFSET_MIN,
+    max = DEFAULT_OFFSET_MAX,
+    fallback = DEFAULT_DISPLAY_OFFSET,
+  } = {}
+) {
+  if (!Number.isFinite(rms) || rms <= 0 || !Number.isFinite(referenceDb)) {
+    return fallback;
+  }
+
+  return clamp(Math.round(referenceDb - decibelsFromRms(rms)), min, max);
 }
 
 export function smoothValue(previous, next, amount = 0.35) {

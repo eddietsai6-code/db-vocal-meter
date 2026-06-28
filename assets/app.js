@@ -1,7 +1,10 @@
 import {
   DEFAULT_DISPLAY_OFFSET,
   DEFAULT_DISPLAY_RESPONSE,
+  DEFAULT_OFFSET_MAX,
+  DEFAULT_OFFSET_MIN,
   DEFAULT_QUIET_THRESHOLD,
+  calibrationOffsetFromReference,
   clamp,
   createSessionStats,
   displayDbFromRms,
@@ -12,11 +15,12 @@ import {
   updateSessionStats,
 } from "./meter-core.js";
 
-const STORAGE_KEY = "db-vocal-meter-settings-v2";
-const DISPLAY_INTERVAL_MS = 250;
+const STORAGE_KEY = "db-vocal-meter-settings-v3";
+const DISPLAY_INTERVAL_MS = 400;
 const DEFAULT_SETTINGS = {
   offset: DEFAULT_DISPLAY_OFFSET,
   smoothing: DEFAULT_DISPLAY_RESPONSE,
+  referenceDb: 70,
 };
 
 const currentValue = document.querySelector("#currentValue");
@@ -30,6 +34,8 @@ const settingsDialog = document.querySelector("#settingsDialog");
 const closeSettingsButton = document.querySelector("#closeSettingsButton");
 const offsetInput = document.querySelector("#offsetInput");
 const smoothingInput = document.querySelector("#smoothingInput");
+const referenceInput = document.querySelector("#referenceInput");
+const calibrateButton = document.querySelector("#calibrateButton");
 const statusText = document.querySelector("#statusText");
 
 let audioContext = null;
@@ -40,6 +46,7 @@ let timeBuffer = null;
 let smoothedDb = null;
 let rmsWindow = [];
 let lastDisplayAt = 0;
+let latestCalibrationRms = 0;
 let stats = createSessionStats();
 let settings = loadSettings();
 
@@ -51,8 +58,9 @@ function loadSettings() {
     }
 
     return {
-      offset: clamp(Number(parsed.offset), 40, 110),
+      offset: clamp(Number(parsed.offset), DEFAULT_OFFSET_MIN, DEFAULT_OFFSET_MAX),
       smoothing: clamp(Number(parsed.smoothing), 0.06, 0.3),
+      referenceDb: clamp(Number(parsed.referenceDb), 20, 120),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -66,6 +74,7 @@ function saveSettings() {
 function syncSettingsInputs() {
   offsetInput.value = String(settings.offset);
   smoothingInput.value = String(settings.smoothing);
+  referenceInput.value = String(settings.referenceDb);
 }
 
 function formatDb(value) {
@@ -118,6 +127,7 @@ function tick() {
   const rms = median(rmsWindow);
   rmsWindow = [];
   lastDisplayAt = now;
+  latestCalibrationRms = rms;
   const nextDb = displayDbFromRms(rms, { offset: settings.offset });
   smoothedDb = smoothDisplayDb(smoothedDb, nextDb, {
     response: settings.smoothing,
@@ -162,6 +172,7 @@ async function startListening() {
     micButton.disabled = false;
     rmsWindow = [];
     lastDisplayAt = 0;
+    latestCalibrationRms = 0;
     updateMicButton(true);
     setStatus("LISTENING");
     animationFrame = window.requestAnimationFrame(tick);
@@ -193,6 +204,7 @@ function stopListening() {
   smoothedDb = null;
   rmsWindow = [];
   lastDisplayAt = 0;
+  latestCalibrationRms = 0;
   micButton.disabled = false;
   updateMicButton(false);
   setStatus("READY");
@@ -211,6 +223,31 @@ function closeSettings() {
   settingsDialog.close();
 }
 
+function calibrateToReference() {
+  const referenceDb = clamp(Number(referenceInput.value), 20, 120);
+  settings = {
+    ...settings,
+    referenceDb,
+  };
+
+  if (!Number.isFinite(latestCalibrationRms) || latestCalibrationRms <= 0) {
+    syncSettingsInputs();
+    saveSettings();
+    setStatus(audioContext ? "SING LOUDER" : "START MIC", true);
+    return;
+  }
+
+  settings = {
+    ...settings,
+    offset: calibrationOffsetFromReference(latestCalibrationRms, referenceDb),
+  };
+  smoothedDb = referenceDb;
+  updateCurrent(referenceDb);
+  syncSettingsInputs();
+  saveSettings();
+  setStatus("CALIBRATED");
+}
+
 resetButton.addEventListener("click", resetSession);
 
 micButton.addEventListener("click", () => {
@@ -227,7 +264,7 @@ closeSettingsButton.addEventListener("click", closeSettings);
 offsetInput.addEventListener("change", () => {
   settings = {
     ...settings,
-    offset: clamp(Number(offsetInput.value), 40, 110),
+    offset: clamp(Number(offsetInput.value), DEFAULT_OFFSET_MIN, DEFAULT_OFFSET_MAX),
   };
   syncSettingsInputs();
   saveSettings();
@@ -240,6 +277,17 @@ smoothingInput.addEventListener("input", () => {
   };
   saveSettings();
 });
+
+referenceInput.addEventListener("change", () => {
+  settings = {
+    ...settings,
+    referenceDb: clamp(Number(referenceInput.value), 20, 120),
+  };
+  syncSettingsInputs();
+  saveSettings();
+});
+
+calibrateButton.addEventListener("click", calibrateToReference);
 
 syncSettingsInputs();
 renderStats();
