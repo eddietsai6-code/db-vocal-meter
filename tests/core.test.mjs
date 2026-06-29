@@ -8,6 +8,7 @@ import {
   decibelsFromRms,
   displayDbFromRms,
   getRms,
+  isCalibratedSettings,
   median,
   shouldTrackDb,
   smoothDisplayDb,
@@ -56,6 +57,13 @@ test("calibrationOffsetFromReference clamps unsafe calibration results", () => {
   assert.equal(calibrationOffsetFromReference(0, 72), 90);
   assert.equal(calibrationOffsetFromReference(1, 190), 140);
   assert.equal(calibrationOffsetFromReference(1, -20), 20);
+});
+
+test("isCalibratedSettings only accepts explicit finite calibration", () => {
+  assert.equal(isCalibratedSettings({ calibrated: true, offset: 90 }), true);
+  assert.equal(isCalibratedSettings({ calibrated: false, offset: 90 }), false);
+  assert.equal(isCalibratedSettings({ calibrated: true, offset: Number.NaN }), false);
+  assert.equal(isCalibratedSettings(null), false);
 });
 
 test("smoothValue blends previous and next readings", () => {

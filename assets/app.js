@@ -9,18 +9,20 @@ import {
   createSessionStats,
   displayDbFromRms,
   getRms,
+  isCalibratedSettings,
   median,
   shouldTrackDb,
   smoothDisplayDb,
   updateSessionStats,
 } from "./meter-core.js";
 
-const STORAGE_KEY = "db-vocal-meter-settings-v3";
+const STORAGE_KEY = "db-vocal-meter-settings-v4";
 const DISPLAY_INTERVAL_MS = 400;
 const DEFAULT_SETTINGS = {
   offset: DEFAULT_DISPLAY_OFFSET,
   smoothing: DEFAULT_DISPLAY_RESPONSE,
   referenceDb: 70,
+  calibrated: false,
 };
 
 const currentValue = document.querySelector("#currentValue");
@@ -61,6 +63,7 @@ function loadSettings() {
       offset: clamp(Number(parsed.offset), DEFAULT_OFFSET_MIN, DEFAULT_OFFSET_MAX),
       smoothing: clamp(Number(parsed.smoothing), 0.06, 0.3),
       referenceDb: clamp(Number(parsed.referenceDb), 20, 120),
+      calibrated: parsed.calibrated === true && Number.isFinite(Number(parsed.offset)),
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -92,10 +95,18 @@ function renderStats() {
   maxValue.textContent = formatDb(stats.max);
 }
 
+function inactiveStatus() {
+  return isCalibratedSettings(settings) ? "READY" : "CALIBRATE";
+}
+
+function activeStatus() {
+  return isCalibratedSettings(settings) ? "LISTENING" : "MATCH METER";
+}
+
 function resetSession() {
   stats = createSessionStats();
   renderStats();
-  setStatus(audioContext ? "LISTENING" : "READY");
+  setStatus(audioContext ? activeStatus() : inactiveStatus());
 }
 
 function updateCurrent(value) {
@@ -128,6 +139,13 @@ function tick() {
   rmsWindow = [];
   lastDisplayAt = now;
   latestCalibrationRms = rms;
+
+  if (!isCalibratedSettings(settings)) {
+    updateCurrent(null);
+    animationFrame = window.requestAnimationFrame(tick);
+    return;
+  }
+
   const nextDb = displayDbFromRms(rms, { offset: settings.offset });
   smoothedDb = smoothDisplayDb(smoothedDb, nextDb, {
     response: settings.smoothing,
@@ -174,7 +192,7 @@ async function startListening() {
     lastDisplayAt = 0;
     latestCalibrationRms = 0;
     updateMicButton(true);
-    setStatus("LISTENING");
+    setStatus(activeStatus());
     animationFrame = window.requestAnimationFrame(tick);
   } catch (error) {
     stopListening();
@@ -207,7 +225,7 @@ function stopListening() {
   latestCalibrationRms = 0;
   micButton.disabled = false;
   updateMicButton(false);
-  setStatus("READY");
+  setStatus(inactiveStatus());
 }
 
 function openSettings() {
@@ -240,6 +258,7 @@ function calibrateToReference() {
   settings = {
     ...settings,
     offset: calibrationOffsetFromReference(latestCalibrationRms, referenceDb),
+    calibrated: true,
   };
   smoothedDb = referenceDb;
   updateCurrent(referenceDb);
@@ -265,9 +284,11 @@ offsetInput.addEventListener("change", () => {
   settings = {
     ...settings,
     offset: clamp(Number(offsetInput.value), DEFAULT_OFFSET_MIN, DEFAULT_OFFSET_MAX),
+    calibrated: true,
   };
   syncSettingsInputs();
   saveSettings();
+  setStatus(audioContext ? activeStatus() : inactiveStatus());
 });
 
 smoothingInput.addEventListener("input", () => {
@@ -293,3 +314,4 @@ syncSettingsInputs();
 renderStats();
 updateCurrent(null);
 updateMicButton(false);
+setStatus(inactiveStatus());

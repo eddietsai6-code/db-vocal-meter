@@ -1,11 +1,11 @@
 # DB Vocal Meter
 
-A minimal browser dB meter for checking a cappella vocal volume while practicing. It is designed for a quick glance: one large current loudness reading, `min / mean / max` for the current practice session, and three bottom controls.
+A minimal browser dB SPL meter for checking a cappella vocal volume while practicing. It is designed for a quick glance after calibration: one large current loudness reading, `min / mean / max` for the current practice session, and three bottom controls.
 
 ## Features
 
 - Phone-first black-and-white interface
-- Current approximate dB readout
+- Calibrated dB SPL readout
 - Current-session `min`, `mean`, and `max`
 - Start/stop microphone control
 - Reset button for a fresh practice pass
@@ -26,7 +26,7 @@ Then open:
 http://127.0.0.1:4190/
 ```
 
-Tap the microphone button and allow microphone access.
+Tap the microphone button and allow microphone access. The app shows `--` until you match it against an external meter.
 
 ## Tests
 
@@ -38,9 +38,9 @@ The test suite covers RMS calculation, dB conversion, smoothing, quiet-input rej
 
 ## Reading Accuracy
 
-This app is for vocal-practice reference, not certified sound level measurement. Browser microphones and device audio pipelines vary widely, so readings are approximate unless you calibrate them against a known sound level meter.
+This app follows the dB SPL conversion model only after calibration. Browser microphone samples are normalized digital audio, not Pascals, so an uncalibrated browser cannot produce an objective sound-pressure number.
 
-The default display maps browser input level into a practical singing-practice range. To align it with another meter, start the microphone, make a steady sound, enter the external meter's number in `Machine dB`, then press `Match`.
+To make the reading objective for your device, start the microphone, make a steady sound, enter the external meter's number in `Machine dB`, then press `Match`. After that, the saved offset maps the measured RMS signal to the same dB SPL scale as your reference meter.
 
 ## Project Structure
 

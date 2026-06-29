@@ -62,6 +62,14 @@ export function calibrationOffsetFromReference(
   return clamp(Math.round(referenceDb - decibelsFromRms(rms)), min, max);
 }
 
+export function isCalibratedSettings(settings) {
+  return Boolean(
+    settings &&
+      settings.calibrated === true &&
+      Number.isFinite(settings.offset)
+  );
+}
+
 export function smoothValue(previous, next, amount = 0.35) {
   if (!Number.isFinite(previous)) {
     return next;
