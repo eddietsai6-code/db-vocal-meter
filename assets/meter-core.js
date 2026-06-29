@@ -7,6 +7,23 @@ export const DEFAULT_OFFSET_MAX = 140;
 export const DEFAULT_QUIET_THRESHOLD = 40;
 export const DEFAULT_DISPLAY_RESPONSE = 0.12;
 export const DEFAULT_DISPLAY_DEADBAND = 2;
+export const REFERENCE_PRESETS = Object.freeze([
+  Object.freeze({
+    id: "normal-conversation",
+    label: "Normal conversation",
+    db: 65,
+  }),
+  Object.freeze({
+    id: "clear-vocal",
+    label: "Clear vocal",
+    db: 75,
+  }),
+  Object.freeze({
+    id: "strong-vocal",
+    label: "Strong vocal",
+    db: 85,
+  }),
+]);
 
 export function clamp(value, min, max) {
   if (!Number.isFinite(value)) {
@@ -68,6 +85,10 @@ export function isCalibratedSettings(settings) {
       settings.calibrated === true &&
       Number.isFinite(settings.offset)
   );
+}
+
+export function referencePresetById(id) {
+  return REFERENCE_PRESETS.find((preset) => preset.id === id) ?? null;
 }
 
 export function smoothValue(previous, next, amount = 0.35) {

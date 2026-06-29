@@ -92,6 +92,15 @@
       <form class="settings-panel" method="dialog">
         <h2>Settings</h2>
         <label>
+          Web reference
+          <select id="referencePresetInput">
+            <option value="normal-conversation">Normal talk 65 dB</option>
+            <option value="clear-vocal">Clear vocal 75 dB</option>
+            <option value="strong-vocal">Strong vocal 85 dB</option>
+            <option value="custom">Custom</option>
+          </select>
+        </label>
+        <label>
           Calibration offset
           <input
             id="offsetInput"
@@ -103,7 +112,7 @@
           />
         </label>
         <label>
-          Machine dB
+          Reference dB
           <input
             id="referenceInput"
             type="number"

@@ -26,7 +26,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -169,7 +170,8 @@ button {
 
 .icon-button:focus-visible,
 .text-button:focus-visible,
-.settings-panel input:focus-visible {
+.settings-panel input:focus-visible,
+.settings-panel select:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 4px;
 }
@@ -233,7 +235,8 @@ button {
   font-size: 0.95rem;
 }
 
-.settings-panel input {
+.settings-panel input,
+.settings-panel select {
   width: 100%;
   min-height: 44px;
   border: 1px solid rgba(255, 255, 255, 0.28);

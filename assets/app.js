@@ -11,6 +11,7 @@ import {
   getRms,
   isCalibratedSettings,
   median,
+  referencePresetById,
   shouldTrackDb,
   smoothDisplayDb,
   updateSessionStats,
@@ -21,8 +22,10 @@ const DISPLAY_INTERVAL_MS = 400;
 const DEFAULT_SETTINGS = {
   offset: DEFAULT_DISPLAY_OFFSET,
   smoothing: DEFAULT_DISPLAY_RESPONSE,
-  referenceDb: 70,
+  referenceDb: 65,
+  referencePreset: "normal-conversation",
   calibrated: false,
+  calibrationSource: "web",
 };
 
 const currentValue = document.querySelector("#currentValue");
@@ -36,6 +39,7 @@ const settingsDialog = document.querySelector("#settingsDialog");
 const closeSettingsButton = document.querySelector("#closeSettingsButton");
 const offsetInput = document.querySelector("#offsetInput");
 const smoothingInput = document.querySelector("#smoothingInput");
+const referencePresetInput = document.querySelector("#referencePresetInput");
 const referenceInput = document.querySelector("#referenceInput");
 const calibrateButton = document.querySelector("#calibrateButton");
 const statusText = document.querySelector("#statusText");
@@ -63,7 +67,12 @@ function loadSettings() {
       offset: clamp(Number(parsed.offset), DEFAULT_OFFSET_MIN, DEFAULT_OFFSET_MAX),
       smoothing: clamp(Number(parsed.smoothing), 0.06, 0.3),
       referenceDb: clamp(Number(parsed.referenceDb), 20, 120),
+      referencePreset: parsed.referencePreset === "custom" ||
+        referencePresetById(parsed.referencePreset)
+        ? parsed.referencePreset
+        : DEFAULT_SETTINGS.referencePreset,
       calibrated: parsed.calibrated === true && Number.isFinite(Number(parsed.offset)),
+      calibrationSource: parsed.calibrationSource === "meter" ? "meter" : "web",
     };
   } catch {
     return { ...DEFAULT_SETTINGS };
@@ -77,6 +86,7 @@ function saveSettings() {
 function syncSettingsInputs() {
   offsetInput.value = String(settings.offset);
   smoothingInput.value = String(settings.smoothing);
+  referencePresetInput.value = settings.referencePreset;
   referenceInput.value = String(settings.referenceDb);
 }
 
@@ -96,7 +106,10 @@ function renderStats() {
 }
 
 function inactiveStatus() {
-  return isCalibratedSettings(settings) ? "READY" : "CALIBRATE";
+  if (!isCalibratedSettings(settings)) {
+    return "CALIBRATE";
+  }
+  return settings.calibrationSource === "web" ? "REFERENCE" : "READY";
 }
 
 function activeStatus() {
@@ -259,6 +272,7 @@ function calibrateToReference() {
     ...settings,
     offset: calibrationOffsetFromReference(latestCalibrationRms, referenceDb),
     calibrated: true,
+    calibrationSource: settings.referencePreset === "custom" ? "meter" : "web",
   };
   smoothedDb = referenceDb;
   updateCurrent(referenceDb);
@@ -280,11 +294,23 @@ micButton.addEventListener("click", () => {
 settingsButton.addEventListener("click", openSettings);
 closeSettingsButton.addEventListener("click", closeSettings);
 
+referencePresetInput.addEventListener("change", () => {
+  const preset = referencePresetById(referencePresetInput.value);
+  settings = {
+    ...settings,
+    referencePreset: referencePresetInput.value,
+    ...(preset ? { referenceDb: preset.db, calibrationSource: "web" } : {}),
+  };
+  syncSettingsInputs();
+  saveSettings();
+});
+
 offsetInput.addEventListener("change", () => {
   settings = {
     ...settings,
     offset: clamp(Number(offsetInput.value), DEFAULT_OFFSET_MIN, DEFAULT_OFFSET_MAX),
     calibrated: true,
+    calibrationSource: "meter",
   };
   syncSettingsInputs();
   saveSettings();
@@ -303,6 +329,8 @@ referenceInput.addEventListener("change", () => {
   settings = {
     ...settings,
     referenceDb: clamp(Number(referenceInput.value), 20, 120),
+    referencePreset: "custom",
+    calibrationSource: "meter",
   };
   syncSettingsInputs();
   saveSettings();

@@ -10,6 +10,8 @@ import {
   getRms,
   isCalibratedSettings,
   median,
+  referencePresetById,
+  REFERENCE_PRESETS,
   shouldTrackDb,
   smoothDisplayDb,
   smoothValue,
@@ -64,6 +66,21 @@ test("isCalibratedSettings only accepts explicit finite calibration", () => {
   assert.equal(isCalibratedSettings({ calibrated: false, offset: 90 }), false);
   assert.equal(isCalibratedSettings({ calibrated: true, offset: Number.NaN }), false);
   assert.equal(isCalibratedSettings(null), false);
+});
+
+test("referencePresetById returns the normal conversation web reference", () => {
+  const preset = referencePresetById("normal-conversation");
+
+  assert.equal(preset.db, 65);
+  assert.match(preset.label, /conversation/i);
+});
+
+test("reference presets stay inside the supported dB range", () => {
+  assert.ok(REFERENCE_PRESETS.length >= 3);
+  for (const preset of REFERENCE_PRESETS) {
+    assert.equal(Number.isFinite(preset.db), true);
+    assert.equal(preset.db >= 20 && preset.db <= 120, true);
+  }
 });
 
 test("smoothValue blends previous and next readings", () => {
