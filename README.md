@@ -1,11 +1,11 @@
 # DB Vocal Meter
 
-A minimal browser dB SPL meter for checking a cappella vocal volume while practicing. It is designed for a quick glance after calibration: one large current loudness reading, `min / mean / max` for the current practice session, and three bottom controls.
+A minimal browser dB meter for checking a cappella vocal volume while practicing. It is designed for a quick glance: one large current loudness reading, `min / mean / max` for the current practice session, and three bottom controls.
 
 ## Features
 
 - Phone-first black-and-white interface
-- Calibrated dB SPL readout
+- Open-and-use dB estimate with optional calibration
 - Current-session `min`, `mean`, and `max`
 - Start/stop microphone control
 - Reset button for a fresh practice pass
@@ -26,7 +26,7 @@ Then open:
 http://127.0.0.1:4190/
 ```
 
-Tap the microphone button and allow microphone access. The app shows `--` until you match it against a web reference or an external meter.
+Tap the microphone button and allow microphone access. The app starts with a built-in web-reference estimate, so no setup is required before first use.
 
 ## Tests
 
@@ -38,9 +38,9 @@ The test suite covers RMS calculation, dB conversion, smoothing, quiet-input rej
 
 ## Reading Accuracy
 
-This app follows the dB SPL conversion model only after calibration. Browser microphone samples are normalized digital audio, not Pascals, so an uncalibrated browser cannot produce an objective sound-pressure number.
+This app starts with a built-in web-reference estimate so it can be used immediately. Browser microphone samples are normalized digital audio, not Pascals, so the default mode should be treated as a practical vocal-volume estimate rather than a certified sound-level-meter reading.
 
-To make the reading objective for your device, start the microphone, make a steady sound, choose a `Web reference` or enter an external meter value in `Reference dB`, then press `Match`. After that, the saved offset maps the measured RMS signal to the same dB SPL scale as the chosen reference.
+To tighten the reading for your device, start the microphone, make a steady sound, choose a `Web reference` or enter an external meter value in `Reference dB`, then press `Match`. After that, the saved offset maps the measured RMS signal to the same dB scale as the chosen reference.
 
 The built-in web references are practical anchors for users without a sound level meter. `Normal talk 65 dB` is based on the NIH/NIDCD average sound-level range for normal conversation. The vocal presets are practice anchors around common voice-effort steps; they are useful for relative singing practice, but an external meter remains the better calibration source.
 

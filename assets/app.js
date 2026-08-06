@@ -17,14 +17,14 @@ import {
   updateSessionStats,
 } from "./meter-core.js";
 
-const STORAGE_KEY = "db-vocal-meter-settings-v4";
+const STORAGE_KEY = "db-vocal-meter-settings-v5";
 const DISPLAY_INTERVAL_MS = 400;
 const DEFAULT_SETTINGS = {
   offset: DEFAULT_DISPLAY_OFFSET,
   smoothing: DEFAULT_DISPLAY_RESPONSE,
   referenceDb: 65,
   referencePreset: "normal-conversation",
-  calibrated: false,
+  calibrated: true,
   calibrationSource: "web",
 };
 
@@ -109,7 +109,7 @@ function inactiveStatus() {
   if (!isCalibratedSettings(settings)) {
     return "CALIBRATE";
   }
-  return settings.calibrationSource === "web" ? "REFERENCE" : "READY";
+  return "READY";
 }
 
 function activeStatus() {
